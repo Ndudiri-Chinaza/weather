@@ -1,51 +1,24 @@
-// state
-let currCity = "Enugu"
-let units = "metric"
+let form = document.getElementById("weather-form")
+let cityInput = document.getElementById("city-input")
 
-// Selectors
-let city = document.querySelector(".weather-city")
-let datetime = document.querySelector(".datetime")
-let weatherForecast = document.querySelector(".forecast")
-let weatherIcon = document.querySelector(".weather-icon")
-let weatherTemperature = document.querySelector(".weather-temperature")
-let weatherMinMax = document.querySelector(".weather-minmax")
-let weatherRealFeel = document.querySelector(".weather-realfeel")
-let weatherHumidity = document.querySelector(".weather-humidity")
-let weatherWind = document.querySelector(".weather-wind")
-let weatherPressure = document.querySelector(".weather-pressure")
+let unitC = document.getElementById("unit-c")
+let unitF = document.getElementById("unit-f")
+let cityName = document.getElementById("city-name")
+let cityDateTime = document.getElementById("city-datetime")
+let cityForecast = document.getElementById("forecast")
+let cityImage = document.getElementById("weather-icon")
+let cityTempRange = document.getElementById("weather-temp-range")
+let cityTempMin = document.getElementById("weather-min")
+let cityTempMax = document.getElementById("weather-max")
+let cityRealFeel = document.getElementById("weather-realfeel")
+let cityHumidity = document.getElementById("weather-humidity")
+let cityWind = document.getElementById("weather-wind")
+let cityPressure = document.getElementById("weather-pressure")
 
-// input search 
-document.querySelector(".weather-search").addEventListener("submit", e => {
-  e.preventDefault()
-  let searchInput = document.querySelector(".weather-searchform")
 
-  currCity = searchInput.value
-
-  // get weather data
-  getWeather()
-
-  // clear form 
-  searchInput.value = ""
-})
-
-// units
-document.querySelector(".weather-unit-celsius").addEventListener("click", () => {
-  if(units !== "metric") {
-    units = "metric"
-
-    // get weather forecast
-    getWeather()
-  }
-})
-
-document.querySelector(".weather-unit-farenheit").addEventListener("click", () => {
-  if(units !== "imperial") {
-    units = "imperial"
-
-    // get weather forecast
-    getWeather()
-  }
-})
+const API_KEY = "19642223b40322b9e46807c9b95d95b0"
+let currentCity = "Enugu"
+let currentUnit = "metric"
 
 // convert timestamp and timezone
 function convertTimeStamp(timestamp, timezone) {
@@ -67,71 +40,96 @@ function convertTimeStamp(timestamp, timezone) {
   return date.toLocaleString("en-US", options)
 }
 
-// convert country code to name
+// Convert country code
 function convertCountryCode(country) {
   let regionNames = new Intl.DisplayNames(["en"], {type : "region"})
   return regionNames.of(country)
 }
 
+// Change units
+// Change to Celsius
+unitC.addEventListener("click", () => {
+  if(currentUnit !== "metric") {
+    currentUnit = "metric"
 
-function getWeather() {
-  const API_KEY = "19642223b40322b9e46807c9b95d95b0"
-  const url = `https://api.openweathermap.org/data/2.5/weather?q=${currCity}&appid=${API_KEY}&units=${units}`
+    // get weather data
+    getWeather(currentCity)
+  }
+});
 
-  fetch(url).then(res => res.json()).then(data => {
-    console.log(data);
-    
-    // Print/Display on UI
-    city.innerHTML = `${data.name},${convertCountryCode(data.sys.country)}`
-    datetime.innerHTML = convertTimeStamp(data.dt, data.timezone)
-    weatherForecast.innerHTML = `<p>${data.weather[0].main}</p>`
-    weatherIcon.innerHTML = `<img src="http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png">`
-    weatherTemperature.innerHTML = `${data.main.temp.toFixed()}&#176`
-    weatherMinMax.innerHTML = `<p>Min: ${data.main.temp_min.toFixed()}&#176</p>
-    <p>Max: ${data.main.temp_max.toFixed()}&#176</p>`
-    weatherRealFeel.innerHTML = `<p>${data.main.feels_like.toFixed()}&#176</p>`
-    weatherHumidity.innerHTML = `<p>${data.main.humidity}%</p>`
-    weatherWind.innerHTML = `<p>${data.wind.speed}${units === "imperial" ? "mph" : "m/s"}</p>`
-    weatherPressure.innerHTML = `<p>${data.main.pressure}hpa</p>`
-  })
+// Change to Fahrenheit
+unitF.addEventListener("click", () => {
+  if (currentUnit !== "imperial") {
+    currentUnit = "imperial"
+
+    // get weather data
+    getWeather(currentCity)
+  } 
+});
+
+
+function isMetric() {
+  return currentUnit === "metric"
 }
 
-document.body.addEventListener("load", getWeather())
+function getTempSymbol() {
+  return isMetric() ? " °C" : " °F"
+}
+function getWindSymbol() {
+  return isMetric() ? "m/s" : "mph"
+}
+
+// Submit form
+form.addEventListener("submit", function(e) {
+  e.preventDefault()
+
+  const city = cityInput.value.trim()
+
+  if(!city) return
+
+  currentCity = city
+
+  // get weather data
+  getWeather(city)
+
+  // clear form
+  cityInput.value = ""
+})
 
 
+async function getWeather(city) {
+  try {
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${currentCity}&appid=${API_KEY}&units=${currentUnit}`
 
+    const response = await fetch(url)
 
-
-
-// Get weather report
-// function getWeather() {
-//   let city = cityInput.value
-//   let apikey = "19642223b40322b9e46807c9b95d95b0"
-//   let url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apikey}`
-
-//   fetch(url).then(function(response) {
-//     return response.json()
-//   }).then(function(data) {
-//     console.log(data);
+    if(!response.ok) {
+      throw new Error("Network is not available");
+    }
     
-//     // let temperature = data.main.temp
-//     // let humidity = data.main.humidity
-//     // let nameOfCity = data.name
-//   })
-// }
+    const data = await response.json()
 
-// getWeather()
+    updateUIData(data);
 
-// async function getWeather() {
-//   try {
-//     let city = cityInput.value
-//     let apikey = "19642223b40322b9e46807c9b95d95b0"
-//     let url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apikey}`
+  } catch (error) {
+    console.log(error);
+  }
 
-//     let response = await fetch(url)
-//     let data = await response.json()
-    
-//   }catch {
-  
-//   }
-// }
+}
+
+function updateUIData(data) {
+  cityName.textContent = `${data.name},${convertCountryCode(data.sys.country)}`
+  cityDateTime.textContent = convertTimeStamp(data.dt, data.timezone)
+  cityForecast.textContent = `${data.weather[0].main}`
+  cityImage.src = `http://openweathermap.org/img/wn/${data.weather[0].icon}@4x.png`
+  cityTempRange.textContent = `${Math.round(data.main.temp)}${getTempSymbol()}`
+  cityTempMin.textContent = `Min: ${Math.round(data.main.temp_min)}${getTempSymbol()}`
+  cityTempMax.textContent = `Max: ${Math.round(data.main.temp_max)}${getTempSymbol()}`
+  cityRealFeel.textContent = `${Math.round(data.main.feels_like)}${getTempSymbol()}`
+  cityHumidity.textContent = `${data.main.humidity}%`
+  cityWind.textContent = `${data.wind.speed}${getWindSymbol()}`
+  cityPressure.textContent = `${data.main.pressure}hPa`
+}
+
+getWeather(currentCity)
+
